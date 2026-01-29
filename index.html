@@ -2,44 +2,89 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gelectronics AI Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gelectronics AI Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f7f9; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        .header { background: #0088cc; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 18px; }
-        #chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { max-width: 80%; padding: 10px 15px; border-radius: 18px; font-size: 15px; line-height: 1.4; }
-        .user { align-self: flex-end; background: #0088cc; color: white; border-bottom-right-radius: 4px; }
-        .ai { align-self: flex-start; background: white; color: #333; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .input-area { padding: 10px; background: white; display: flex; gap: 8px; border-top: 1px solid #ddd; }
-        input { flex: 1; border: 1px solid #ddd; border-radius: 25px; padding: 10px 15px; outline: none; font-size: 15px; }
-        button { background: #0088cc; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        :root { --main-color: #0088cc; --bg-color: #f0f2f5; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-color); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        /* Animatsiyali Header */
+        .header { background: linear-gradient(135deg, #0088cc, #005580); color: white; padding: 15px; text-align: center; font-size: 18px; font-weight: bold; box-shadow: 0 2px 10px rgba(0,0,0,0.1); animation: slideDown 0.5s ease; }
+        
+        #chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
+        
+        /* Xabarlar animatsiyasi */
+        .msg { max-width: 80%; padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.5; animation: fadeIn 0.3s ease; position: relative; }
+        .user { align-self: flex-end; background: var(--main-color); color: white; border-bottom-right-radius: 4px; }
+        .ai { align-self: flex-start; background: white; color: #333; border-bottom-left-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        /* Kirish maydoni */
+        .input-area { padding: 15px; background: white; display: flex; gap: 10px; align-items: center; border-top: 1px solid #eee; }
+        input { flex: 1; border: 2px solid #eee; border-radius: 25px; padding: 12px 20px; outline: none; font-size: 15px; transition: 0.3s; }
+        input:focus { border-color: var(--main-color); }
+        
+        button { background: var(--main-color); color: white; border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; box-shadow: 0 3px 10px rgba(0,136,204,0.3); }
+        button:hover { transform: scale(1.1); }
+
+        /* Animatsiyalar */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
+        .typing { font-size: 13px; color: #888; padding: 0 20px 10px; display: none; font-style: italic; }
     </style>
 </head>
 <body>
-    <div class="header">Gelectronics AI Yordamchisi</div>
+    <div class="header">💎 Gelectronics AI Assistant</div>
     <div id="chat-box">
-        <div class="msg ai">Salom! Men Gelectronics AI yordamchisiman. Sizga qanday yordam bera olaman?</div>
+        <div class="msg ai">Salom! Men Gelectronics AI yordamchisiman. Texnik savollaringiz bo'lsa, yozing!</div>
     </div>
+    <div id="typing" class="typing">AI o'ylamoqda...</div>
     <div class="input-area">
-        <input type="text" id="text-input" placeholder="Savolingizni yozing...">
-        <button onclick="sendToBot()">🚀</button>
+        <input type="text" id="inp" placeholder="Savol yozing..." onkeypress="if(event.key==='Enter') askAI()">
+        <button onclick="askAI()">🚀</button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+        tg.ready();
 
-        function sendToBot() {
-            const input = document.getElementById('text-input');
-            const message = input.value.trim();
-            if (message) {
-                // Xabarni Telegram botga yuborish
-                tg.sendData(message);
-                // Oynani yopish
-                tg.close();
+        async function askAI() {
+            const inp = document.getElementById('inp');
+            const box = document.getElementById('chat-box');
+            const typing = document.getElementById('typing');
+            const msg = inp.value.trim();
+            if(!msg) return;
+
+            box.innerHTML += `<div class="msg user">${msg}</div>`;
+            inp.value = '';
+            box.scrollTop = box.scrollHeight;
+            typing.style.display = 'block';
+
+            try {
+                const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": "Bearer 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",
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [
+                            {role: "system", content: "Sen Gelectronics kompaniyasining mutaxassis yordamchisisan."},
+                            {role: "user", content: msg}
+                        ]
+                    })
+                });
+                const data = await res.json();
+                typing.style.display = 'none';
+                box.innerHTML += `<div class="msg ai">${data.choices[0].message.content}</div>`;
+            } catch (e) {
+                typing.style.display = 'none';
+                box.innerHTML += `<div class="msg ai" style="color:red">Ulanishda xato. Qaytadan urinib ko'ring.</div>`;
             }
+            box.scrollTop = box.scrollHeight;
         }
     </script>
 </body>
